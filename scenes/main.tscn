@@ -1,7 +1,9 @@
-[gd_scene load_steps=23 format=3 uid="uid://caxjugclup7nx"]
+[gd_scene load_steps=32 format=3 uid="uid://caxjugclup7nx"]
 
 [ext_resource type="Script" path="res://scenes/Airplane.gd" id="1_3b1u5"]
 [ext_resource type="Script" path="res://scenes/FollowCamera.gd" id="2_d4vyo"]
+[ext_resource type="Script" path="res://scenes/TreeSpawner.gd" id="3_cy68s"]
+[ext_resource type="PackedScene" uid="uid://cb65waptnjnlx" path="res://scenes/tree.tscn" id="4_ut8q2"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6mcdo"]
 
@@ -63,6 +65,27 @@ size = Vector3(20, 0.2, 200)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oupqp"]
 size = Vector3(20, 0.2, 200)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v80m1"]
+albedo_color = Color(0.485703, 0.485704, 0.485703, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_xis5n"]
+size = Vector3(12, 3, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_l2835"]
+size = Vector3(12, 3, 6)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_yiv55"]
+radius = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_injoy"]
+albedo_color = Color(1.50409e-07, 0.364729, 3.85046e-07, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_23fl2"]
+size = Vector3(2000, 20, 2000)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_s5ha8"]
+size = Vector3(2000, 2, 2000)
 
 [node name="Main" type="Node3D"]
 
@@ -129,11 +152,45 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_qiyvi")
 
-[node name="Runway" type="StaticBody3D" parent="."]
+[node name="Airport" type="Node3D" parent="." groups=["no_trees"]]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Runway"]
+[node name="Runway" type="StaticBody3D" parent="Airport"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Airport/Runway"]
 material_override = SubResource("StandardMaterial3D_ympfl")
 mesh = SubResource("BoxMesh_gtf5y")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Runway"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Airport/Runway"]
 shape = SubResource("BoxShape3D_oupqp")
+
+[node name="Terminal" type="StaticBody3D" parent="Airport"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Airport/Terminal"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0.5, 0)
+material_override = SubResource("StandardMaterial3D_v80m1")
+mesh = SubResource("BoxMesh_xis5n")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Airport/Terminal"]
+shape = SubResource("BoxShape3D_l2835")
+
+[node name="TreeSpawner" type="Node3D" parent="."]
+visible = false
+script = ExtResource("3_cy68s")
+tree_scene = ExtResource("4_ut8q2")
+
+[node name="Tree" parent="TreeSpawner" instance=ExtResource("4_ut8q2")]
+
+[node name="CheckArea" type="Area3D" parent="TreeSpawner"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TreeSpawner/CheckArea"]
+shape = SubResource("SphereShape3D_yiv55")
+
+[node name="Ground" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+material_override = SubResource("StandardMaterial3D_injoy")
+mesh = SubResource("BoxMesh_23fl2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+shape = SubResource("BoxShape3D_s5ha8")
