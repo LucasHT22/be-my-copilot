@@ -1,6 +1,7 @@
-[gd_scene load_steps=26 format=3 uid="uid://caxjugclup7nx"]
+[gd_scene load_steps=27 format=3 uid="uid://caxjugclup7nx"]
 
 [ext_resource type="Script" path="res://scenes/Airplane.gd" id="1_3b1u5"]
+[ext_resource type="Script" path="res://scenes/HUD.gd" id="3_73tfw"]
 [ext_resource type="Script" path="res://scenes/Camera3D.gd" id="4_3rj1l"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6mcdo"]
@@ -158,3 +159,24 @@ shape = SubResource("BoxShape3D_l2835")
 [node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("airplane")]
 script = ExtResource("4_3rj1l")
 airplane = NodePath("../Airplane")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3_73tfw")
+plane = NodePath("../Airplane")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD"]
+offset_right = 40.0
+offset_bottom = 40.0
+pivot_offset = Vector2(20, 20)
+
+[node name="SpeedLabel" type="Label" parent="HUD/VBoxContainer"]
+layout_mode = 2
+
+[node name="FlapsLabel" type="Label" parent="HUD/VBoxContainer"]
+layout_mode = 2
+
+[node name="StallLabel" type="Label" parent="HUD/VBoxContainer"]
+layout_mode = 2
+
+[node name="AltitudeLabel" type="Label" parent="HUD/VBoxContainer"]
+layout_mode = 2

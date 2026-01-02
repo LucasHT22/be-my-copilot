@@ -22,8 +22,9 @@ extends CharacterBody3D
 @export var stall_speed := 14.0
 @export var brake_power := 30.0
 
-var speed := 0.0
-var flaps := false
+var speed: float = 0.0
+var flaps: bool = false
+var stalled: bool = false
 
 func _ready():
 	floor_snap_length = 1.5
@@ -69,22 +70,24 @@ func handle_input(delta):
 	)
 
 func apply_movement(delta):
-	var forward = -transform.basis.z
+	var forward: Vector3 = -transform.basis.z
 	velocity.x = forward.x * speed
 	velocity.z = forward.z * speed
+	
+	stalled = false
 	
 	if not is_on_floor():
 		var lift_factor: float = clamp(speed / stall_speed, 0.0, 1.2)
 		var lift: float = lift_power * lift_factor
-
-
+		
 		if flaps:
 			lift *= flap_lift_multiplier
-
+		
 		velocity.y += lift * delta
 		
 		if speed < stall_speed:
-			rotation.x += deg_to_rad(25) * delta
+			stalled = true
+			rotation.x += deg_to_rad(20) * delta
 	
 	if not is_on_floor():
 		velocity.y -= gravity * delta
