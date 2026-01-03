@@ -1,15 +1,15 @@
 extends CharacterBody3D
 
 @export var mass: float = 1200.0
-@export var engine_power: float = 55.0
+@export var engine_power: float = 58.0
 @export var max_speed: float = 95.0
 
-@export var lift_coefficient: float = 22.0
+@export var lift_coefficient: float = 20.0
 @export var drag_coefficient: float = 0.0025
 @export var gravity: float = 9.81
 
-@export var stall_speed: float = 18.0
-@export var flap_lift_multiplier: float = 1.6
+@export var stall_speed: float = 17.0
+@export var flap_lift_multiplier: float = 1.5
 @export var flap_drag_multiplier: float = 1.4
 
 @export var pitch_rate: float = 1.6
@@ -19,6 +19,14 @@ extends CharacterBody3D
 @export var angular_damping: float = 1.9
 @export var max_pitch_deg: float = 30.0
 @export var max_roll_deg: float = 60.0
+
+@export var elevator_power: float = 2.8
+@export var aileron_power: float = 3.6
+@export var rudder_power: float = 1.2
+
+@export var control_effectiveness_speed: float = 22.0
+
+@export var rotation_speed: float = 1.1
 
 var speed: float = 0.0
 var throttle: float = 0.0
@@ -54,19 +62,22 @@ func handle_input(delta):
 	if Input.is_action_just_pressed("ui_focus_next"):
 		flaps = !flaps
 	
-	# pitch
+	# normalize
+	var control_factor: float = clamp(pow(speed / control_effectiveness_speed, 1.4), 0.0, 1.0)
+	
+	# elevator / pitch
 	var pitch_input := Input.get_action_strength("ui_accept") - Input.get_action_strength("ui_cancel")
-	angular_velocity.x += pitch_input * pitch_rate * delta
+	angular_velocity.x += pitch_input * elevator_power * control_factor * delta
 	
-	# roll
+	# aileron / roll
 	var roll_input := Input.get_action_strength("ui_right") - Input.get_action_strength("ui_cancel")
-	angular_velocity.z += roll_input * roll_rate * delta
+	angular_velocity.z += roll_input * aileron_power * control_factor * delta
 	
-	# yaw
+	# rudder / yaw
 	var yaw_input := roll_input
 	if not is_on_floor():
-		yaw_input *= 0.35
-	angular_velocity.y += yaw_input * yaw_rate * delta
+		yaw_input *= 0.4
+	angular_velocity.y += yaw_input * rudder_power * control_factor * delta
 
 func apply_flight_physics(delta):
 	# rotation
@@ -94,19 +105,22 @@ func apply_flight_physics(delta):
 	# lift
 	stalled = false
 	if not is_on_floor():
-		var aoa := forward.dot(Vector3.UP)
-		var lift_factor: float = clamp((speed / stall_speed) * aoa, 0.0, 1.5)
+		var aoa: float = clamp(sin(rotation.x), 0.0, 1.0)
 		
+		var lift_factor: float = clamp((speed / stall_speed) * aoa, 0.0, 1.5)
 		var lift: float = lift_coefficient * lift_factor
+		
 		if flaps:
 			lift *= flap_lift_multiplier
+		
+		if global_position.y < 4.0:
+			lift *= 1.12
 		
 		# stall
 		if speed < stall_speed:
 			stalled = true
-			lift *= 0.35
-			angular_velocity.x += deg_to_rad(12.0) * delta
-			angular_velocity.z += randf_range(-0.4, 0.4) * delta
+			lift *= 0.25
+			angular_velocity.x += deg_to_rad(10.0) * delta
 		
 		velocity.y += lift * delta
 		velocity.y -= gravity * delta
