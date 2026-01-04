@@ -2,7 +2,7 @@ extends Node3D
 
 @export var plane: Node3D
 const CHUNK_SIZE := 256
-const VIEW_DISTANCE := 2
+const VIEW_DISTANCE := 4
 
 var chunks := {}
 var chunk_scene := preload("res://scenes/Chunk.tscn")
@@ -14,6 +14,9 @@ func world_to_chunk(pos: Vector3) -> Vector2i:
 	)
 
 func _process(_delta):
+	if plane == null:
+		return
+	
 	var center = world_to_chunk(plane.global_position)
 	
 	for x in range(center.x - VIEW_DISTANCE, center.x + VIEW_DISTANCE + 1):
@@ -32,8 +35,8 @@ func load_chunk(coord: Vector2i):
 
 func unload_far_chunks(center: Vector2i):
 	for coord in chunks.keys():
-		var d = abs(coord.x - center.x) + abs(coord.y - center.y)
-		if d > VIEW_DISTANCE:
+		if abs(coord.x - center.x) > VIEW_DISTANCE + 1 \
+		or abs(coord.y - center.y) > VIEW_DISTANCE + 1:
 			chunks[coord].queue_free()
 			chunks.erase(coord)
 

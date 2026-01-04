@@ -21,14 +21,22 @@ func generate(coord: Vector2i):
 
 func generate_ground():
 	var ground = StaticBody3D.new()
+	ground.name = "Ground"
 	
 	var mesh = MeshInstance3D.new()
-	mesh.mesh = PlaneMesh.new()
-	mesh.mesh.size = Vector2(SIZE, SIZE)
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(SIZE, SIZE)
+	mesh.mesh = plane
+	
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.1, 0.6, 0.2)
+	mat.roughness = 1.0
+	mesh.material_override = mat
 	
 	var col = CollisionShape3D.new()
-	col.shape = BoxShape3D.new()
-	col.shape.size = Vector3(SIZE, 2, SIZE)
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(SIZE, 2, SIZE)
+	col.shape = shape
 	
 	ground.add_child(mesh)
 	ground.add_child(col)
@@ -60,20 +68,31 @@ func generate_sea():
 	add_child(water)
 
 func generate_forest():
-	var forest = $Forest
+	var forest := get_or_create("Forest")
 	
 	var tree_scene = preload("res://scenes/Tree.tscn")
+	
 	var rng = RandomNumberGenerator.new()
 	rng.seed = hash(chunk_coord)
 	
-	for i in range(40):
-		var tree = tree_scene.instantiate()
-		tree.position = Vector3(
-			rng.randf_range(0, SIZE),
-			0,
-			rng.randf_range(0, SIZE)
-		)
-		forest.add_child(tree)
+	for x in range(0, SIZE, 10):
+		for z in range(0, SIZE, 10):
+			var wx = chunk_coord.x * SIZE + x
+			var wz = chunk_coord.y * SIZE + z
+			
+			var density = noise.get_noise_2d(wx * 0.01, wz * 0.01)
+			
+			density = (density + 1.0) * 0.5
+			
+			if density > 0.45:
+				var tree = tree_scene.instantiate()
+				tree.position = Vector3(
+					x + rng.randf_range(-3, 3),
+					0,
+					z + rng.randf_range(-3, 3)
+				)
+				tree.scale *= rng.randf_range(0.9, 1.4)
+				forest.add_child(tree)
 
 func generate_city():
 	var city = $City
@@ -87,3 +106,12 @@ func generate_city():
 			randf_range(0, SIZE)
 		)
 		city.add_child(b)
+
+func get_or_create(name: String) -> Node3D:
+	if has_node(name):
+		return get_node(name) as Node3D
+	
+	var n := Node3D.new()
+	n.name = name
+	add_child(n)
+	return n
