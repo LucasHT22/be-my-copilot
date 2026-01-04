@@ -1,8 +1,11 @@
-[gd_scene load_steps=27 format=3 uid="uid://caxjugclup7nx"]
+[gd_scene load_steps=26 format=3 uid="uid://caxjugclup7nx"]
 
 [ext_resource type="Script" path="res://scenes/Airplane.gd" id="1_3b1u5"]
 [ext_resource type="Script" path="res://scenes/HUD.gd" id="3_73tfw"]
 [ext_resource type="Script" path="res://scenes/Camera3D.gd" id="4_3rj1l"]
+[ext_resource type="Script" path="res://scenes/World.gd" id="4_61m14"]
+[ext_resource type="PackedScene" uid="uid://6dl4qxwnv76j" path="res://scenes/Runway.tscn" id="5_38u1x"]
+[ext_resource type="PackedScene" uid="uid://dsw3v5s7xii3k" path="res://scenes/Terminal.tscn" id="6_c7ljx"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6mcdo"]
 
@@ -44,6 +47,11 @@ height = 0.2
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_nvspu"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k2g4y"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_ecrc7"]
+
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_551yn"]
 ground_color = Color(0.101961, 0.4, 0.0352941, 1)
 
@@ -56,31 +64,13 @@ background_energy_multiplier = 6.88
 sky = SubResource("Sky_lcqjs")
 ssao_enabled = true
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ympfl"]
-albedo_color = Color(0.113725, 0.113725, 0.113725, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_gtf5y"]
-size = Vector3(20, 0.2, 200)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_oupqp"]
-size = Vector3(20, 0.2, 200)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_v80m1"]
-albedo_color = Color(0.485703, 0.485704, 0.485703, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_xis5n"]
-size = Vector3(12, 3, 6)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_l2835"]
-size = Vector3(12, 3, 6)
-
 [node name="Main" type="Node3D"]
 
 [node name="Airplane" type="CharacterBody3D" parent="."]
 script = ExtResource("1_3b1u5")
 
 [node name="Body" type="MeshInstance3D" parent="Airplane"]
-transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 2.2, 0, 0, 0)
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 2.5, 0, 0, 0)
 material_override = SubResource("StandardMaterial3D_6mcdo")
 mesh = SubResource("BoxMesh_o7i8t")
 
@@ -94,8 +84,8 @@ transform = Transform3D(3, 0, 0, 0, 0.15, 0, 0, 0, 0.8, 1.6, 0.6, -0.2)
 material_override = SubResource("StandardMaterial3D_uogxw")
 mesh = SubResource("BoxMesh_ku4hh")
 
-[node name="Tail" type="MeshInstance3D" parent="Airplane"]
-transform = Transform3D(0.4, 0, 0, 0, 0.6, 0, 0, 0, 0.7, 0, 0.2, 1.3)
+[node name="VerticalStabilizer" type="MeshInstance3D" parent="Airplane"]
+transform = Transform3D(0.15, 0, 0, 0, 0.6, 0, 0, 0, 0.7, 0, 0.75, 1.3)
 material_override = SubResource("StandardMaterial3D_kx3v6")
 mesh = SubResource("BoxMesh_uj8r1")
 
@@ -125,6 +115,11 @@ mesh = SubResource("CylinderMesh_5axt3")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Airplane"]
 shape = SubResource("CapsuleShape3D_nvspu")
 
+[node name="HorizontalStabilizer" type="MeshInstance3D" parent="Airplane"]
+transform = Transform3D(2, 0, 0, 0, 0.15, 0, 0, 0, 0.71, 0, 0.6, 1.3)
+material_override = SubResource("StandardMaterial3D_k2g4y")
+mesh = SubResource("BoxMesh_ecrc7")
+
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.858065, 0.513541, 0, -0.513541, 0.858065, 0, 0, 0)
 light_energy = 1.3
@@ -132,29 +127,6 @@ shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_qiyvi")
-
-[node name="Airport" type="Node3D" parent="."]
-
-[node name="Runway" type="StaticBody3D" parent="Airport"]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Airport/Runway"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-material_override = SubResource("StandardMaterial3D_ympfl")
-mesh = SubResource("BoxMesh_gtf5y")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Airport/Runway"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-shape = SubResource("BoxShape3D_oupqp")
-
-[node name="Terminal" type="StaticBody3D" parent="Airport"]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Airport/Terminal"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0.5, 0)
-material_override = SubResource("StandardMaterial3D_v80m1")
-mesh = SubResource("BoxMesh_xis5n")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Airport/Terminal"]
-shape = SubResource("BoxShape3D_l2835")
 
 [node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("airplane")]
 script = ExtResource("4_3rj1l")
@@ -180,3 +152,10 @@ layout_mode = 2
 
 [node name="AltitudeLabel" type="Label" parent="HUD/VBoxContainer"]
 layout_mode = 2
+
+[node name="World" type="Node3D" parent="."]
+script = ExtResource("4_61m14")
+
+[node name="Runway" parent="." instance=ExtResource("5_38u1x")]
+
+[node name="Terminal" parent="." instance=ExtResource("6_c7ljx")]
