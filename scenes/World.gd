@@ -1,87 +1,43 @@
 extends Node3D
 
-@export var world_size := 2000
-@export var seed := 12345
+@export var plane: Node3D
+const CHUNK_SIZE := 256
+const VIEW_DISTANCE := 2
+
+var chunks := {}
+var chunk_scene := preload("res://scenes/Chunk.tscn")
+
+func world_to_chunk(pos: Vector3) -> Vector2i:
+	return Vector2i(
+		floor(pos.x / CHUNK_SIZE),
+		floor(pos.z / CHUNK_SIZE)
+	)
+
+func _process(_delta):
+	var center = world_to_chunk(plane.global_position)
+	
+	for x in range(center.x - VIEW_DISTANCE, center.x + VIEW_DISTANCE + 1):
+		for z in range(center.y - VIEW_DISTANCE, center.y + VIEW_DISTANCE + 1):
+			var coord = Vector2i(x, z)
+			if not chunks.has(coord):
+				load_chunk(coord)
+	
+	unload_far_chunks(center)
+
+func load_chunk(coord: Vector2i):
+	var chunk = chunk_scene.instantiate()
+	$Chunks.add_child(chunk)
+	chunk.generate(coord)
+	chunks[coord] = chunk
+
+func unload_far_chunks(center: Vector2i):
+	for coord in chunks.keys():
+		var d = abs(coord.x - center.x) + abs(coord.y - center.y)
+		if d > VIEW_DISTANCE:
+			chunks[coord].queue_free()
+			chunks.erase(coord)
 
 func _ready():
-	randomize()
-	generate_ground()
-	generate_airport()
-	generate_forests()
-	generate_cities()
-
-func generate_ground():
-	var ground = StaticBody3D.new()
-	ground.name = "Ground"
-	
-	var mesh = MeshInstance3D.new()
-	mesh.mesh = PlaneMesh.new()
-	mesh.mesh.size = Vector2(world_size, world_size)
-	
-	var col = CollisionShape3D.new()
-	col.shape = BoxShape3D.new()
-	col.shape.size = Vector3(world_size, 2, world_size)
-	
-	ground.add_child(mesh)
-	ground.add_child(col)
-	add_child(ground)
-
-func generate_airport():
-	var airport = Node3D.new()
-	airport.name = "Airport"
+	var airport = preload("res://scenes/Airport.tscn").instantiate()
+	airport.position = Vector3.ZERO
 	add_child(airport)
-	
-	var runway = preload("res://scenes/Runway.tscn").instantiate()
-	runway.position = Vector3(0, 0, -200)
-	runway.add_to_group("no_trees")
-	runway.add_to_group("no_city")
-	airport.add_child(runway)
-	
-	var terminal = preload("res://scenes/Runway.tscn").instantiate()
-	terminal.position = Vector3(30, 0, -180)
-	terminal.add_to_group("no_trees")
-	terminal.add_to_group("no_city")
-	airport.add_child(terminal)
-
-func generate_forests():
-	var forest_parent = Node3D.new()
-	forest_parent.name = "Forests"
-	add_child(forest_parent)
-	
-	for i in range(2000):
-		var pos = random_world_position()
-		
-		if is_blocked(pos):
-			continue
-		
-		var tree = preload("res://scenes/Tree.tscn").instantiate()
-		tree.position = pos
-		forest_parent.add_child(tree)
-
-func is_blocked(pos: Vector3) -> bool:
-	for node in get_tree().get_nodes_in_group("no_trees"):
-		if node.global_position.distance_to(pos) < 30:
-			return true
-	return false
-
-func generate_cities():
-	var city_parent = Node3D.new()
-	city_parent.name = "Cities"
-	add_child(city_parent)
-	
-	for i in range(300):
-		var pos = random_world_position()
-		
-		if pos.distance_to(Vector3.ZERO) < 400:
-			continue
-		
-		var building = preload("res://scenes/Terminal.tscn").instantiate()
-		building.position = pos
-		city_parent.add_child(building)
-
-func random_world_position() -> Vector3:
-	return Vector3(
-		randf_range(-world_size * 0.5, world_size * 0.5),
-		0,
-		randf_range(-world_size * 0.5, world_size * 0.5)
-	)

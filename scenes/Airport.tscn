@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://bf6g6txx13nlm"]
+
+[ext_resource type="PackedScene" uid="uid://6dl4qxwnv76j" path="res://scenes/Runway.tscn" id="1_gy5wj"]
+[ext_resource type="PackedScene" uid="uid://dsw3v5s7xii3k" path="res://scenes/Terminal.tscn" id="2_1awlj"]
+
+[node name="Airport" type="Node3D"]
+
+[node name="Runway" parent="." instance=ExtResource("1_gy5wj")]
+
+[node name="Terminal" parent="." instance=ExtResource("2_1awlj")]

@@ -4,8 +4,8 @@
 [ext_resource type="Script" path="res://scenes/HUD.gd" id="3_73tfw"]
 [ext_resource type="Script" path="res://scenes/Camera3D.gd" id="4_3rj1l"]
 [ext_resource type="Script" path="res://scenes/World.gd" id="4_61m14"]
-[ext_resource type="PackedScene" uid="uid://6dl4qxwnv76j" path="res://scenes/Runway.tscn" id="5_38u1x"]
-[ext_resource type="PackedScene" uid="uid://dsw3v5s7xii3k" path="res://scenes/Terminal.tscn" id="6_c7ljx"]
+[ext_resource type="PackedScene" uid="uid://bmx83wcjvrkap" path="res://scenes/Chunk.tscn" id="5_64ru0"]
+[ext_resource type="PackedScene" uid="uid://bf6g6txx13nlm" path="res://scenes/Airport.tscn" id="7_hqcs0"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6mcdo"]
 
@@ -153,9 +153,12 @@ layout_mode = 2
 [node name="AltitudeLabel" type="Label" parent="HUD/VBoxContainer"]
 layout_mode = 2
 
-[node name="World" type="Node3D" parent="."]
+[node name="World" type="Node3D" parent="." node_paths=PackedStringArray("plane")]
 script = ExtResource("4_61m14")
+plane = NodePath("../Airplane")
 
-[node name="Runway" parent="." instance=ExtResource("5_38u1x")]
+[node name="Chunks" type="Node3D" parent="World"]
 
-[node name="Terminal" parent="." instance=ExtResource("6_c7ljx")]
+[node name="Chunk" parent="." instance=ExtResource("5_64ru0")]
+
+[node name="Airport" parent="." instance=ExtResource("7_hqcs0")]
