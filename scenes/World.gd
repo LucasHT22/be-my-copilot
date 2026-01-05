@@ -2,7 +2,7 @@ extends Node3D
 
 @export var plane: Node3D
 const CHUNK_SIZE := 256
-const VIEW_DISTANCE := 4
+const VIEW_DISTANCE := 8
 
 var chunks := {}
 var chunk_scene := preload("res://scenes/Chunk.tscn")
