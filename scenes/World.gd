@@ -1,46 +1,39 @@
 extends Node3D
 
-@export var plane: Node3D
+@export var player: Node3D
+@export var chunk_scene: PackedScene
+@export var view_distance := 2
+
 const CHUNK_SIZE := 256
-const VIEW_DISTANCE := 8
-
 var chunks := {}
-var chunk_scene := preload("res://scenes/Chunk.tscn")
-
-func world_to_chunk(pos: Vector3) -> Vector2i:
-	return Vector2i(
-		floor(pos.x / CHUNK_SIZE),
-		floor(pos.z / CHUNK_SIZE)
-	)
 
 func _process(_delta):
-	if plane == null:
+	if player == null:
 		return
 	
-	var center = world_to_chunk(plane.global_position)
+	var player_chunk = get_player_chunk()
 	
-	for x in range(center.x - VIEW_DISTANCE, center.x + VIEW_DISTANCE + 1):
-		for z in range(center.y - VIEW_DISTANCE, center.y + VIEW_DISTANCE + 1):
-			var coord = Vector2i(x, z)
-			if not chunks.has(coord):
-				load_chunk(coord)
-	
-	unload_far_chunks(center)
+	for x in range(
+		player_chunk.x - view_distance,
+		player_chunk.x + view_distance + 1
+	):
+		for z in range(
+			player_chunk.y - view_distance,
+			player_chunk.y + view_distance + 1
+		):
+			var key = Vector2i(x, z)
+			if not chunks.has(key):
+				spawn_chunk(key)
 
-func load_chunk(coord: Vector2i):
+func spawn_chunk(coord: Vector2i):
 	var chunk = chunk_scene.instantiate()
-	$Chunks.add_child(chunk)
 	chunk.generate(coord)
+	add_child(chunk)
 	chunks[coord] = chunk
 
-func unload_far_chunks(center: Vector2i):
-	for coord in chunks.keys():
-		if abs(coord.x - center.x) > VIEW_DISTANCE + 1 \
-		or abs(coord.y - center.y) > VIEW_DISTANCE + 1:
-			chunks[coord].queue_free()
-			chunks.erase(coord)
-
-func _ready():
-	var airport = preload("res://scenes/Airport.tscn").instantiate()
-	airport.position = Vector3.ZERO
-	add_child(airport)
+func get_player_chunk() -> Vector2i:
+	var p = player.global_position
+	return Vector2i(
+		floor(p.x / CHUNK_SIZE),
+		floor(p.z / CHUNK_SIZE)
+	)

@@ -33,22 +33,34 @@ func generate(coord: Vector2i):
 		generate_airport()
 
 func has_airport() -> bool:
-	return abs(chunk_coord.x) % 15 == 0 and abs(chunk_coord.y) % 15 == 0
+	return (chunk_coord.x * 73856093 ^ chunk_coord.y * 19349663) % 40 == 0
 
 func is_airport_zone(x: float, z: float) -> bool:
-	var cx = chunk_coord.x * SIZE + SIZE / 2
-	var cz = chunk_coord.y * SIZE + SIZE / 2
+	var cx = SIZE * 0.5
+	var cz = SIZE * 0.5
 	return Vector2(x, z).distance_to(Vector2(cx, cz)) < AIRPORT_RADIUS
 
 func get_biome() -> String:
-	var biome_noise = biome_noise.get_noise_2d(chunk_coord.x, chunk_coord.y)
+	var elevation = height_noise.get_noise_2d(
+		chunk_coord.x * SIZE,
+		chunk_coord.y * SIZE
+	)
 	
-	if biome_noise < -0.3:
+	var moisture = biome_noise.get_noise_2d(
+		chunk_coord.x * 0.15,
+		chunk_coord.y * 0.15
+	)
+	
+	if elevation < -0.15:
+		return "sea"
+	
+	if moisture > 0.35:
 		return "forest"
-	elif biome_noise < 0.2:
-		return "forest"
-	else:
+	
+	if moisture > 0.15:
 		return "plains"
+	
+	return "dry"
 
 func should_generate_city() -> bool:
 	var v := biome_noise.get_noise_2d(
@@ -67,8 +79,36 @@ func generate_content():
 		"forest":
 			generate_forest()
 		"plains":
+			generate_plains()
 			if should_generate_city():
 				generate_city()
+
+func generate_plains():
+	var plains := Node3D.new()
+	add_child(plains)
+	
+	var tree_scene = preload("res://scenes/Tree.tscn")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(chunk_coord)
+	
+	for i in range(80):
+		var x = rng.randf_range(0, SIZE)
+		var z = rng.randf_range(0, SIZE)
+		
+		var wx = chunk_coord.x * SIZE + x
+		var wz = chunk_coord.y * SIZE + z
+		
+		if is_airport_zone(x, z):
+			continue
+		
+		var density = noise.get_noise_2d(wx * 0.015, wz * 0.015)
+		if density < 0.35:
+			continue
+		
+		var tree = tree_scene.instantiate()
+		tree.position = Vector3(x, 0, z)
+		tree.scale *= rng.randf_range(0.7, 1.2)
+		plains.add_child(tree)
 
 func generate_ground():
 	var ground := StaticBody3D.new()
@@ -78,6 +118,7 @@ func generate_ground():
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE, SIZE)
 	mesh.mesh = plane
+	mesh.rotation_degrees.x = -90
 	
 	var wx = chunk_coord.x * SIZE
 	var wz = chunk_coord.y * SIZE
@@ -102,62 +143,68 @@ func generate_ground():
 
 func generate_city():
 	var city := Node3D.new()
-	city.name = "City"
 	add_child(city)
 	
 	var building_scene := preload("res://scenes/Terminal.tscn")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(chunk_coord)
 	
-	for x in range(40, SIZE - 40, 40):
-		for z in range(40, SIZE - 40, 40):
+	var block_size = 40
+	
+	for x in range(block_size, SIZE - block_size, block_size):
+		for z in range(block_size, SIZE - block_size, block_size):
 			var wx = chunk_coord.x * SIZE + x
 			var wz = chunk_coord.y * SIZE + z
 			
 			if is_airport_zone(wx, wz):
 				continue
 			
-			if rng.randf() < 0.6:
+			if rng.randf() < 0.5:
 				continue
 			
 			var b = building_scene.instantiate()
 			b.position = Vector3(x, 0, z)
 			b.scale = Vector3(
-				rng.randf_range(0.8, 1.3),
-				rng.randf_range(1.0, 4.0),
-				rng.randf_range(0.8, 1.3)
+				rng.randf_range(0.9, 1.4),
+				rng.randf_range(1.2, 6.0),
+				rng.randf_range(0.9, 1.4)
 			)
 			city.add_child(b)
 
 func generate_forest():
 	var forest := Node3D.new()
-	forest.name = "Forest"
 	add_child(forest)
 	
 	var tree_scene = preload("res://scenes/Tree.tscn")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(chunk_coord)
 	
-	for x in range(0, SIZE, 10):
-		for z in range(0, SIZE, 10):
-			var wx = chunk_coord.x * SIZE + x
-			var wz = chunk_coord.y * SIZE + z
-			
-			if is_airport_zone(wx, wz):
-				continue
-			
-			var cluster = noise.get_noise_2d(wx, wz)
-			if cluster > 0.25:
-				var tree = tree_scene.instantiate()
-				tree.position = Vector3(x, 0, z)
-				tree.scale *= rng.randf_range(0.9, 1.4)
-				forest.add_child(tree)
+	for i in range(300):
+		var x = rng.randf_range(0, SIZE)
+		var z = rng.randf_range(0, SIZE)
+		
+		var wx = chunk_coord.x * SIZE + x
+		var wz = chunk_coord.y * SIZE + z
+		
+		if is_airport_zone(wx, wz):
+			continue
+		
+		var density = noise.get_noise_2d(wx * 0.02, wz * 0.02)
+		if density < 0.2:
+			continue
+		
+		var tree = tree_scene.instantiate()
+		tree.position = Vector3(x, 0, z)
+		tree.scale *= rng.randf_range(0.8, 1.6)
+		forest.add_child(tree)
 
 func generate_sea():
 	var water := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE, SIZE)
 	water.mesh = plane
+	water.rotation_degrees.x = -90
+	water.position.y = -3
 	
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.1, 0.35, 0.75)
@@ -170,5 +217,9 @@ func generate_sea():
 func generate_airport():
 	var airport_scene = preload("res://scenes/Airport.tscn")
 	var airport = airport_scene.instantiate()
-	airport.position = Vector3(SIZE / 2, 0, SIZE / 2)
+	var h = height_noise.get_noise_2d(
+		chunk_coord.x * SIZE,
+		chunk_coord.y * SIZE
+	) * 20.0
+	airport.position = Vector3(SIZE * 0.5, h, SIZE * 0.5)
 	add_child(airport)
