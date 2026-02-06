@@ -80,6 +80,7 @@ airplane = NodePath("../World/Airplane")
 
 [node name="HUD" type="CanvasLayer" parent="."]
 script = ExtResource("3_73tfw")
+plane = NodePath("../World/Airplane")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="HUD"]
 offset_right = 40.0
@@ -98,17 +99,23 @@ layout_mode = 2
 [node name="AltitudeLabel" type="Label" parent="HUD/VBoxContainer"]
 layout_mode = 2
 
-[node name="World" type="Node3D" parent="."]
+[node name="World" type="Node3D" parent="." node_paths=PackedStringArray("player")]
 script = ExtResource("4_61m14")
+player = NodePath("Airplane")
+chunk_scene = ExtResource("5_64ru0")
 
 [node name="Chunks" type="Node3D" parent="World"]
 
 [node name="Airplane" type="RigidBody3D" parent="World"]
+axis_lock_linear_x = true
+axis_lock_linear_z = true
+axis_lock_angular_x = true
+axis_lock_angular_z = true
 center_of_mass_mode = 1
 center_of_mass = Vector3(0, 0, -0.3)
 can_sleep = false
-linear_damp = 0.02
-angular_damp = 0.2
+linear_damp = 0.05
+angular_damp = 2.5
 script = ExtResource("1_3b1u5")
 
 [node name="Body" type="MeshInstance3D" parent="World/Airplane"]

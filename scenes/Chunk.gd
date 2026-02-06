@@ -118,7 +118,6 @@ func generate_ground():
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE, SIZE)
 	mesh.mesh = plane
-	mesh.rotation_degrees.x = -90
 	
 	var wx = chunk_coord.x * SIZE
 	var wz = chunk_coord.y * SIZE
@@ -203,7 +202,6 @@ func generate_sea():
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE, SIZE)
 	water.mesh = plane
-	water.rotation_degrees.x = -90
 	water.position.y = -3
 	
 	var mat := StandardMaterial3D.new()
