@@ -99,6 +99,15 @@ layout_mode = 2
 [node name="AltitudeLabel" type="Label" parent="HUD/VBoxContainer"]
 layout_mode = 2
 
+[node name="AoALabel" type="Label" parent="HUD/VBoxContainer"]
+layout_mode = 2
+
+[node name="ThrottleLabel" type="Label" parent="HUD/VBoxContainer"]
+layout_mode = 2
+
+[node name="TrimLabel" type="Label" parent="HUD/VBoxContainer"]
+layout_mode = 2
+
 [node name="World" type="Node3D" parent="." node_paths=PackedStringArray("player")]
 script = ExtResource("4_61m14")
 player = NodePath("Airplane")
@@ -107,8 +116,9 @@ chunk_scene = ExtResource("5_64ru0")
 [node name="Chunks" type="Node3D" parent="World"]
 
 [node name="Airplane" type="RigidBody3D" parent="World"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.62912, 0)
 center_of_mass_mode = 1
-center_of_mass = Vector3(0, 0, -0.3)
+center_of_mass = Vector3(0, 0, -80)
 can_sleep = false
 linear_damp = 0.05
 angular_damp = 2.5

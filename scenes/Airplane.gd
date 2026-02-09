@@ -34,9 +34,17 @@ func _ready():
 	mass = 1200.0
 	angular_damp = 2.5
 	linear_damp = 0.05
+	elevator_trim = 0.1
 
 func _physics_process(delta):
 	handle_input(delta)
+	
+	print("Throttle: ", throttle)
+	print("Elevator: ", Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up"))
+	print("Aileron: ", Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"))
+	print("Airspeed: ", indicated_airspeed)
+	print("---")
+	
 	calculate_airspeed()
 	apply_engine_thrust()
 	apply_aerodynamics()
