@@ -91,3 +91,11 @@ func get_player_chunk() -> Vector2i:
 		floor(p.x / CHUNK_SIZE),
 		floor(p.z / CHUNK_SIZE)
 	)
+
+
+func _on_free_flight_pressed():
+	pass # Replace with function body.
+
+
+func _on_quit_pressed():
+	pass # Replace with function body.

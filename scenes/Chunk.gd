@@ -23,8 +23,9 @@ func _ready():
 	height_noise.fractal_lacunarity = 2.0
 	height_noise.fractal_gain = 0.4
 
-func generate(coord: Vector2i):
+func generate(coord: Vector2i, lod := 0):
 	chunk_coord = coord
+	lod_level = lod
 	position = Vector3(
 		coord.x * SIZE,
 		0,
@@ -39,6 +40,9 @@ func generate(coord: Vector2i):
 			generate_airport()
 
 func get_terrain_subdivisions() -> int:
+	if has_airport():
+		return 128
+	
 	match lod_level:
 		0: return 32
 		1: return 16
@@ -56,22 +60,35 @@ func is_airport_zone(x: float, z: float) -> bool:
 func get_height_at(world_x: float, world_z: float) -> float:
 	var noise_val = height_noise.get_noise_2d(world_x, world_z)
 	var base_height = (noise_val * 3.0) + 0.5
-	if has_airport():
-		var cx = chunk_coord.x * SIZE + SIZE * 0.5
-		var cz = chunk_coord.y * SIZE + SIZE * 0.5
-		var local_x = world_x - chunk_coord.x * SIZE
-		var local_z = world_z - chunk_coord.y * SIZE
-		var dist = Vector2(local_x, local_z).distance_to(Vector2(SIZE * 0.5, SIZE * 0.5))
+	
+	var nearest_airport_coord = find_nearest_airport(world_x, world_z)
+	if nearest_airport_coord != Vector2i(-9999, -9999):
+		var cx = nearest_airport_coord.x * SIZE + SIZE * 0.5
+		var cz = nearest_airport_coord.y * SIZE + SIZE * 0.5
+		var dist = Vector2(world_x, world_z).distance_to(Vector2(cx, cz))
 		
-		if dist < AIRPORT_RADIUS * 1.5:
-			var center_noise = height_noise.get_noise_2d(cx, cz)
-			var center_height = (center_noise * 3.0) + 0.5
-			var blend = clamp(dist / (AIRPORT_RADIUS * 1.5), 0.0, 1.0)
+		var center_noise = height_noise.get_noise_2d(cx, cz)
+		var center_height = (center_noise * 3.0) + 0.5
+		
+		if dist < AIRPORT_RADIUS:
+			return center_height
+		elif  dist < AIRPORT_RADIUS * 2.0:
+			var blend = (dist - AIRPORT_RADIUS) / AIRPORT_RADIUS
 			blend = blend * blend * (3.0 - 2.0 * blend)
-			
 			return lerp(center_height, base_height, blend)
 	
 	return base_height
+
+func find_nearest_airport(world_x: float, world_z: float) -> Vector2i:
+	var check_coord = Vector2i(int(world_x / SIZE), int(world_z / SIZE))
+	
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var coord = check_coord + Vector2i(dx, dy)
+			if (coord.x * 73856093 ^ coord.y * 19349663) % 40 == 0:
+				return coord
+	
+	return Vector2i(-9999, -9999)
 
 func get_biome() -> String:
 	var wx = chunk_coord.x * SIZE + SIZE * 0.5
@@ -116,6 +133,8 @@ func generate_content():
 				generate_city()
 		"dry":
 			generate_dry()
+
+var pooled_objects := []
 
 func generate_plains():
 	var plains := Node3D.new()
@@ -183,7 +202,7 @@ func generate_ground():
 	var bedrock_plane := BoxMesh.new()
 	bedrock_plane.size = Vector3(SIZE, 10, SIZE)
 	bedrock_mesh.mesh = bedrock_plane
-	bedrock_mesh.position.y = -10
+	bedrock_mesh.position.y = -10.0
 	
 	var bedrock_mat := StandardMaterial3D.new()
 	bedrock_mat.albedo_color = Color(0.2, 0.2, 0.2)
@@ -198,6 +217,16 @@ func generate_ground():
 	bedrock.add_child(bedrock_mesh)
 	bedrock.add_child(bedrock_col)
 	add_child(bedrock)
+	
+	var biome_check = get_biome()
+	
+	var nearest_airport = find_nearest_airport(
+		chunk_coord.x * SIZE + SIZE * 0.5,
+		chunk_coord.y * SIZE + SIZE * 0.5
+	)
+	
+	if biome_check == "sea" and nearest_airport == Vector2i(-9999, -9999):
+		return
 	
 	var ground := StaticBody3D.new()
 	ground.name = "Ground"
@@ -220,17 +249,14 @@ func generate_ground():
 			var wz = chunk_coord.y * SIZE + z
 			var h = get_height_at(wx, wz)
 			
-			if has_airport() and is_airport_zone(x, z):
-				var cx = chunk_coord.x * SIZE + SIZE * 0.5
-				var cz = chunk_coord.y * SIZE + SIZE * 0.5
-				var center_noise = height_noise.get_noise_2d(cx, cz)
-				h = (center_noise * 3.0) + 0.5
-			
 			var vertex = Vector3(x, h, z)
 			var uv = Vector2(float(ix) / subdivisions, float(iz) / subdivisions)
 			
 			surface_tool.set_uv(uv)
 			surface_tool.add_vertex(vertex)
+	
+	if has_airport():
+		print("  ^ Has airport at radius ", AIRPORT_RADIUS)
 	
 	for iz in range(subdivisions):
 		for ix in range(subdivisions):
@@ -267,7 +293,13 @@ func generate_ground():
 	mesh_instance.material_override = mat
 	
 	ground.add_child(mesh_instance)
-	mesh_instance.create_trimesh_collision()
+	
+	var collision_shape := CollisionShape3D.new()
+	var shape := ConcavePolygonShape3D.new()
+	shape.set_faces(array_mesh.get_faces())
+	collision_shape.shape = shape
+	
+	ground.add_child(collision_shape)
 	add_child(ground)
 
 func generate_city():
@@ -331,22 +363,30 @@ func generate_forest():
 		forest.add_child(tree)
 
 func generate_sea():
-	var water := MeshInstance3D.new()
+	var water := StaticBody3D.new()
 	water.name = "Water"
+	
+	var water_mesh := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(SIZE, SIZE)
-	water.mesh = plane
-	
-	var sea_level = 0.0
-	water.position.y = sea_level
+	water_mesh.mesh = plane
+	water_mesh.position.y = 0.0
 	
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.1, 0.35, 0.75)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.roughness = 0.05
 	mat.metallic = 0.3
-	water.material_override = mat
+	water_mesh.material_override = mat
 	
+	var col := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(SIZE, 15.0, SIZE)
+	col.shape = box
+	col.position.y = -7.5
+	
+	water.add_child(water_mesh)
+	water.add_child(col)
 	add_child(water)
 
 func generate_airport():
@@ -359,28 +399,7 @@ func generate_airport():
 	var center_noise = height_noise.get_noise_2d(cx, cz)
 	var h = (center_noise * 3.0) + 0.5
 	
+	print("Airport at chunk ", chunk_coord, " height: ", h)
+	
 	airport.position = Vector3(SIZE * 0.5, h, SIZE * 0.5)
 	add_child(airport)
-	
-	var airport_ground := StaticBody3D.new()
-	airport_ground.name = "AirportGround"
-	
-	var ground_mesh := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(AIRPORT_RADIUS * 2, AIRPORT_RADIUS * 2)
-	ground_mesh.mesh = plane
-	ground_mesh.position = Vector3(SIZE * 0.5, h, SIZE * 0.5)
-	
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.3, 0.3, 0.3)
-	ground_mesh.material_override = mat
-	
-	var col := CollisionShape3D.new()
-	var box_shape := BoxShape3D.new()
-	box_shape.size = Vector3(AIRPORT_RADIUS * 2, 0.1, AIRPORT_RADIUS * 2)
-	col.shape = box_shape
-	col.position = Vector3(SIZE * 0.5, h, SIZE * 0.5)
-	
-	airport_ground.add_child(ground_mesh)
-	airport_ground.add_child(col)
-	add_child(airport_ground)

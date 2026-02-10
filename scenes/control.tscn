@@ -1,0 +1,42 @@
+[gd_scene load_steps=3 format=3 uid="uid://b5885coqfoorr"]
+
+[ext_resource type="Script" path="res://scenes/Control.gd" id="1_xsl1v"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_trt74"]
+
+[node name="Control" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_xsl1v")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Label" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Will you be..."
+
+[node name="MainLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Be my copilot?"
+label_settings = SubResource("LabelSettings_trt74")
+horizontal_alignment = 1
+
+[node name="FreeFlight" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Free Flight"
+
+[node name="Quit" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+
+[connection signal="pressed" from="VBoxContainer/FreeFlight" to="." method="_on_free_flight_pressed"]
+[connection signal="pressed" from="VBoxContainer/Quit" to="." method="_on_quit_pressed"]

@@ -38,19 +38,14 @@ func _ready():
 
 func _physics_process(delta):
 	handle_input(delta)
-	
-	print("Throttle: ", throttle)
-	print("Elevator: ", Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up"))
-	print("Aileron: ", Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left"))
-	print("Airspeed: ", indicated_airspeed)
-	print("---")
-	
 	calculate_airspeed()
 	apply_engine_thrust()
 	apply_aerodynamics()
 	apply_control_surfaces()
 	apply_ground_forces()
-	display_instruments()
+	
+	if global_position.y < -2.0:
+		print("FALLING THROUGH! Pos: ", global_position, " Vel: ", linear_velocity)
 	
 	if not linear_velocity.is_finite():
 		linear_velocity = Vector3.ZERO
@@ -186,12 +181,3 @@ func is_on_ground() -> bool:
 	query.exclude = [self]
 	var result := space_state.intersect_ray(query)
 	return result.size() > 0
-
-func display_instruments():
-	if Engine.get_frames_drawn() % 30 == 0:
-		print("AIRSPEED: %d kts" % int(indicated_airspeed * 1.94384))  # m/s to knots
-		print("ALTITUDE: %d ft" % int(global_position.y * 3.28084))  # m to feet
-		print("AoA: %.1f°  %s" % [angle_of_attack, "⚠ STALL" if is_stalled else ""])
-		print("THROTTLE: %d%%" % int(throttle * 100))
-		print("FLAPS: %s" % ("DOWN" if flaps_extended else "UP"))
-		print("TRIM: %.2f" % elevator_trim)
