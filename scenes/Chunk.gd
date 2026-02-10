@@ -194,14 +194,12 @@ func generate_ground():
 	ground.name = "Ground"
 	
 	var mesh_instance := MeshInstance3D.new()
+	var array_mesh := ArrayMesh.new()
 	var surface_tool := SurfaceTool.new()
 	
 	surface_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	
 	var step = SIZE / float(TERRAIN_SUBDIVISIONS)
-	var terrain_bottom = -5.0
-	
-	var top_vertices = []
 	
 	for iz in range(TERRAIN_SUBDIVISIONS + 1):
 		for ix in range(TERRAIN_SUBDIVISIONS + 1):
@@ -233,126 +231,8 @@ func generate_ground():
 			surface_tool.add_index(i2)
 			surface_tool.add_index(i3)
 	
-	var bottom_start_index = (TERRAIN_SUBDIVISIONS + 1) * (TERRAIN_SUBDIVISIONS + 1)
-	for iz in range(TERRAIN_SUBDIVISIONS + 1):
-		for ix in range(TERRAIN_SUBDIVISIONS + 1):
-			var x = ix * step
-			var z = iz * step
-			var vertex = Vector3(x, terrain_bottom, z)
-			var uv = Vector2(float(ix) / TERRAIN_SUBDIVISIONS, float(iz) / TERRAIN_SUBDIVISIONS)
-			
-			surface_tool.set_uv(uv)
-			surface_tool.add_vertex(vertex)
-	
-	for iz in range(TERRAIN_SUBDIVISIONS):
-		for ix in range(TERRAIN_SUBDIVISIONS):
-			var i0 = bottom_start_index + iz * (TERRAIN_SUBDIVISIONS + 1) + ix
-			var i1 = i0 + 1
-			var i2 = i0 + (TERRAIN_SUBDIVISIONS + 1)
-			var i3 = i2 + 1
-			
-			surface_tool.add_index(i0)
-			surface_tool.add_index(i1)
-			surface_tool.add_index(i2)
-			
-			surface_tool.add_index(i1)
-			surface_tool.add_index(i3)
-			surface_tool.add_index(i2)
-	
-	var side_start_index = bottom_start_index + (TERRAIN_SUBDIVISIONS + 1) * (TERRAIN_SUBDIVISIONS + 1)
-	
-	for ix in range(TERRAIN_SUBDIVISIONS + 1):
-		var x = ix * step
-		var wx = chunk_coord.x * SIZE + x
-		var wz = chunk_coord.y * SIZE + 0
-		var h = get_height_at(wx, wz)
-		
-		surface_tool.set_uv(Vector2(float(ix) / TERRAIN_SUBDIVISIONS, 0))
-		surface_tool.add_vertex(Vector3(x, h, 0))
-		surface_tool.set_uv(Vector2(float(ix) / TERRAIN_SUBDIVISIONS, 1))
-		surface_tool.add_vertex(Vector3(x, terrain_bottom, 0))
-	
-	for ix in range(TERRAIN_SUBDIVISIONS):
-		var base = side_start_index + ix * 2
-		surface_tool.add_index(base)
-		surface_tool.add_index(base + 2)
-		surface_tool.add_index(base + 1)
-		
-		surface_tool.add_index(base + 1)
-		surface_tool.add_index(base + 2)
-		surface_tool.add_index(base + 3)
-	
-	side_start_index += (TERRAIN_SUBDIVISIONS + 1) * 2
-	
-	for ix in range(TERRAIN_SUBDIVISIONS + 1):
-		var x = ix * step
-		var wx = chunk_coord.x * SIZE + x
-		var wz = chunk_coord.y * SIZE + SIZE
-		var h = get_height_at(wx, wz)
-		
-		surface_tool.set_uv(Vector2(float(ix) / TERRAIN_SUBDIVISIONS, 0))
-		surface_tool.add_vertex(Vector3(x, h, SIZE))
-		surface_tool.set_uv(Vector2(float(ix) / TERRAIN_SUBDIVISIONS, 1))
-		surface_tool.add_vertex(Vector3(x, terrain_bottom, SIZE))
-	
-	for ix in range(TERRAIN_SUBDIVISIONS):
-		var base = side_start_index + ix * 2
-		surface_tool.add_index(base)
-		surface_tool.add_index(base + 1)
-		surface_tool.add_index(base + 2)
-		
-		surface_tool.add_index(base + 1)
-		surface_tool.add_index(base + 3)
-		surface_tool.add_index(base + 2)
-	
-	side_start_index += (TERRAIN_SUBDIVISIONS + 1) * 2
-	
-	for iz in range(TERRAIN_SUBDIVISIONS + 1):
-		var z = iz * step
-		var wx = chunk_coord.x * SIZE + 0
-		var wz = chunk_coord.y * SIZE + z
-		var h = get_height_at(wx, wz)
-		
-		surface_tool.set_uv(Vector2(float(iz) / TERRAIN_SUBDIVISIONS, 0))
-		surface_tool.add_vertex(Vector3(0, h, z))
-		surface_tool.set_uv(Vector2(float(iz) / TERRAIN_SUBDIVISIONS, 1))
-		surface_tool.add_vertex(Vector3(0, terrain_bottom, z))
-	
-	for iz in range(TERRAIN_SUBDIVISIONS):
-		var base = side_start_index + iz * 2
-		surface_tool.add_index(base)
-		surface_tool.add_index(base + 1)
-		surface_tool.add_index(base + 2)
-		
-		surface_tool.add_index(base + 1)
-		surface_tool.add_index(base + 3)
-		surface_tool.add_index(base + 2)
-	
-	side_start_index += (TERRAIN_SUBDIVISIONS + 1) * 2
-	
-	for iz in range(TERRAIN_SUBDIVISIONS + 1):
-		var z = iz * step
-		var wx = chunk_coord.x * SIZE + SIZE
-		var wz = chunk_coord.y * SIZE + z
-		var h = get_height_at(wx, wz)
-		
-		surface_tool.set_uv(Vector2(float(iz) / TERRAIN_SUBDIVISIONS, 0))
-		surface_tool.add_vertex(Vector3(SIZE, h, z))
-		surface_tool.set_uv(Vector2(float(iz) / TERRAIN_SUBDIVISIONS, 1))
-		surface_tool.add_vertex(Vector3(SIZE, terrain_bottom, z))
-	
-	for iz in range(TERRAIN_SUBDIVISIONS):
-		var base = side_start_index + iz * 2
-		surface_tool.add_index(base)
-		surface_tool.add_index(base + 2)
-		surface_tool.add_index(base + 1)
-		
-		surface_tool.add_index(base + 1)
-		surface_tool.add_index(base + 2)
-		surface_tool.add_index(base + 3)
-	
 	surface_tool.generate_normals()
-	var array_mesh = surface_tool.commit()
+	array_mesh = surface_tool.commit()
 	mesh_instance.mesh = array_mesh
 	
 	var mat := StandardMaterial3D.new()
