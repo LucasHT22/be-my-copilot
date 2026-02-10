@@ -8,16 +8,33 @@ extends Node3D
 const CHUNK_SIZE := 256
 var chunks := {}
 var last_player_chunk := Vector2i(-999, -999)
+var generation_queue := []
+var active_threads := {}
 
 func _process(_delta):
 	if player == null:
 		return
+	
+	check_finished_threads()
 	
 	var player_chunk = get_player_chunk()
 	
 	if player_chunk != last_player_chunk:
 		last_player_chunk = player_chunk
 		update_chunks(player_chunk)
+
+func check_finished_threads():
+	var finished := []
+	for coord in active_threads.keys():
+		var thread: Thread = active_threads[coord]
+		if not thread.is_alive():
+			var chunk = thread.wait_to_finish()
+			add_child(chunk)
+			chunks[coord] = chunk
+			finished.append(coord)
+	
+	for coord in finished:
+		active_threads.erase(coord)
 
 func update_chunks(player_chunk: Vector2i):
 	for x in range(
@@ -29,7 +46,7 @@ func update_chunks(player_chunk: Vector2i):
 			player_chunk.y + view_distance + 1
 		):
 			var key = Vector2i(x, z)
-			if not chunks.has(key):
+			if not chunks.has(key) and not active_threads.has(key):
 				spawn_chunk(key)
 	
 	var chunks_to_remove = []
@@ -44,10 +61,23 @@ func update_chunks(player_chunk: Vector2i):
 		unload_chunk(coord)
 
 func spawn_chunk(coord: Vector2i):
+	var player_chunk = get_player_chunk()
+	var dist = max(abs(coord.x - player_chunk.x), abs(coord.y - player_chunk.y))
+	
+	var lod = 0
+	if dist > 2:
+		lod = 2
+	elif dist > 1:
+		lod = 1
+	
+	var thread = Thread.new()
+	thread.start(_generate_chunk_threaded.bind(coord, lod))
+	active_threads[coord] = thread
+
+func _generate_chunk_threaded(coord: Vector2i, lod: int):
 	var chunk = chunk_scene.instantiate()
-	chunk.generate(coord)
-	add_child(chunk)
-	chunks[coord] = chunk
+	chunk.generate(coord, lod)
+	return chunk
 
 func unload_chunk(coord: Vector2i):
 	if chunks.has(coord):
