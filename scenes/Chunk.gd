@@ -17,10 +17,10 @@ func _ready():
 	biome_noise.frequency = 0.08
 	
 	height_noise.seed = 4242
-	height_noise.frequency = 0.01
-	height_noise.fractal_octaves = 4
+	height_noise.frequency = 0.005
+	height_noise.fractal_octaves = 2
 	height_noise.fractal_lacunarity = 2.0
-	height_noise.fractal_gain = 0.5
+	height_noise.fractal_gain = 0.4
 
 func generate(coord: Vector2i):
 	chunk_coord = coord
@@ -45,7 +45,8 @@ func is_airport_zone(x: float, z: float) -> bool:
 	return Vector2(x, z).distance_to(Vector2(cx, cz)) < AIRPORT_RADIUS
 
 func get_height_at(world_x: float, world_z: float) -> float:
-	var base_height = height_noise.get_noise_2d(world_x, world_z) * 20.0
+	var noise_val = height_noise.get_noise_2d(world_x, world_z)
+	var base_height = (noise_val * 3.0) + 0.5
 	if has_airport():
 		var cx = chunk_coord.x * SIZE + SIZE * 0.5
 		var cz = chunk_coord.y * SIZE + SIZE * 0.5
@@ -54,7 +55,8 @@ func get_height_at(world_x: float, world_z: float) -> float:
 		var dist = Vector2(local_x, local_z).distance_to(Vector2(SIZE * 0.5, SIZE * 0.5))
 		
 		if dist < AIRPORT_RADIUS * 1.5:
-			var center_height = height_noise.get_noise_2d(cx, cz) * 20.0
+			var center_noise = height_noise.get_noise_2d(cx, cz)
+			var center_height = (center_noise * 3.0) + 0.5
 			var blend = clamp(dist / (AIRPORT_RADIUS * 1.5), 0.0, 1.0)
 			blend = blend * blend * (3.0 - 2.0 * blend)
 			
@@ -172,7 +174,7 @@ func generate_ground():
 	var bedrock_plane := BoxMesh.new()
 	bedrock_plane.size = Vector3(SIZE, 10, SIZE)
 	bedrock_mesh.mesh = bedrock_plane
-	bedrock_mesh.position.y = -50
+	bedrock_mesh.position.y = -10
 	
 	var bedrock_mat := StandardMaterial3D.new()
 	bedrock_mat.albedo_color = Color(0.2, 0.2, 0.2)
@@ -182,7 +184,7 @@ func generate_ground():
 	var bedrock_shape := BoxShape3D.new()
 	bedrock_shape.size = Vector3(SIZE, 10, SIZE)
 	bedrock_col.shape = bedrock_shape
-	bedrock_col.position.y = -50
+	bedrock_col.position.y = -10
 	
 	bedrock.add_child(bedrock_mesh)
 	bedrock.add_child(bedrock_col)
@@ -192,16 +194,18 @@ func generate_ground():
 	ground.name = "Ground"
 	
 	var mesh_instance := MeshInstance3D.new()
-	var array_mesh := ArrayMesh.new()
 	var surface_tool := SurfaceTool.new()
 	
 	surface_tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	
 	var step = SIZE / float(TERRAIN_SUBDIVISIONS)
+	var terrain_bottom = -5.0
+	
+	var top_vertices = []
 	
 	for iz in range(TERRAIN_SUBDIVISIONS + 1):
 		for ix in range(TERRAIN_SUBDIVISIONS + 1):
-			var x = ix + step
+			var x = ix * step
 			var z = iz * step
 			
 			var wx = chunk_coord.x * SIZE + x
@@ -229,8 +233,126 @@ func generate_ground():
 			surface_tool.add_index(i2)
 			surface_tool.add_index(i3)
 	
+	var bottom_start_index = (TERRAIN_SUBDIVISIONS + 1) * (TERRAIN_SUBDIVISIONS + 1)
+	for iz in range(TERRAIN_SUBDIVISIONS + 1):
+		for ix in range(TERRAIN_SUBDIVISIONS + 1):
+			var x = ix * step
+			var z = iz * step
+			var vertex = Vector3(x, terrain_bottom, z)
+			var uv = Vector2(float(ix) / TERRAIN_SUBDIVISIONS, float(iz) / TERRAIN_SUBDIVISIONS)
+			
+			surface_tool.set_uv(uv)
+			surface_tool.add_vertex(vertex)
+	
+	for iz in range(TERRAIN_SUBDIVISIONS):
+		for ix in range(TERRAIN_SUBDIVISIONS):
+			var i0 = bottom_start_index + iz * (TERRAIN_SUBDIVISIONS + 1) + ix
+			var i1 = i0 + 1
+			var i2 = i0 + (TERRAIN_SUBDIVISIONS + 1)
+			var i3 = i2 + 1
+			
+			surface_tool.add_index(i0)
+			surface_tool.add_index(i1)
+			surface_tool.add_index(i2)
+			
+			surface_tool.add_index(i1)
+			surface_tool.add_index(i3)
+			surface_tool.add_index(i2)
+	
+	var side_start_index = bottom_start_index + (TERRAIN_SUBDIVISIONS + 1) * (TERRAIN_SUBDIVISIONS + 1)
+	
+	for ix in range(TERRAIN_SUBDIVISIONS + 1):
+		var x = ix * step
+		var wx = chunk_coord.x * SIZE + x
+		var wz = chunk_coord.y * SIZE + 0
+		var h = get_height_at(wx, wz)
+		
+		surface_tool.set_uv(Vector2(float(ix) / TERRAIN_SUBDIVISIONS, 0))
+		surface_tool.add_vertex(Vector3(x, h, 0))
+		surface_tool.set_uv(Vector2(float(ix) / TERRAIN_SUBDIVISIONS, 1))
+		surface_tool.add_vertex(Vector3(x, terrain_bottom, 0))
+	
+	for ix in range(TERRAIN_SUBDIVISIONS):
+		var base = side_start_index + ix * 2
+		surface_tool.add_index(base)
+		surface_tool.add_index(base + 2)
+		surface_tool.add_index(base + 1)
+		
+		surface_tool.add_index(base + 1)
+		surface_tool.add_index(base + 2)
+		surface_tool.add_index(base + 3)
+	
+	side_start_index += (TERRAIN_SUBDIVISIONS + 1) * 2
+	
+	for ix in range(TERRAIN_SUBDIVISIONS + 1):
+		var x = ix * step
+		var wx = chunk_coord.x * SIZE + x
+		var wz = chunk_coord.y * SIZE + SIZE
+		var h = get_height_at(wx, wz)
+		
+		surface_tool.set_uv(Vector2(float(ix) / TERRAIN_SUBDIVISIONS, 0))
+		surface_tool.add_vertex(Vector3(x, h, SIZE))
+		surface_tool.set_uv(Vector2(float(ix) / TERRAIN_SUBDIVISIONS, 1))
+		surface_tool.add_vertex(Vector3(x, terrain_bottom, SIZE))
+	
+	for ix in range(TERRAIN_SUBDIVISIONS):
+		var base = side_start_index + ix * 2
+		surface_tool.add_index(base)
+		surface_tool.add_index(base + 1)
+		surface_tool.add_index(base + 2)
+		
+		surface_tool.add_index(base + 1)
+		surface_tool.add_index(base + 3)
+		surface_tool.add_index(base + 2)
+	
+	side_start_index += (TERRAIN_SUBDIVISIONS + 1) * 2
+	
+	for iz in range(TERRAIN_SUBDIVISIONS + 1):
+		var z = iz * step
+		var wx = chunk_coord.x * SIZE + 0
+		var wz = chunk_coord.y * SIZE + z
+		var h = get_height_at(wx, wz)
+		
+		surface_tool.set_uv(Vector2(float(iz) / TERRAIN_SUBDIVISIONS, 0))
+		surface_tool.add_vertex(Vector3(0, h, z))
+		surface_tool.set_uv(Vector2(float(iz) / TERRAIN_SUBDIVISIONS, 1))
+		surface_tool.add_vertex(Vector3(0, terrain_bottom, z))
+	
+	for iz in range(TERRAIN_SUBDIVISIONS):
+		var base = side_start_index + iz * 2
+		surface_tool.add_index(base)
+		surface_tool.add_index(base + 1)
+		surface_tool.add_index(base + 2)
+		
+		surface_tool.add_index(base + 1)
+		surface_tool.add_index(base + 3)
+		surface_tool.add_index(base + 2)
+	
+	side_start_index += (TERRAIN_SUBDIVISIONS + 1) * 2
+	
+	for iz in range(TERRAIN_SUBDIVISIONS + 1):
+		var z = iz * step
+		var wx = chunk_coord.x * SIZE + SIZE
+		var wz = chunk_coord.y * SIZE + z
+		var h = get_height_at(wx, wz)
+		
+		surface_tool.set_uv(Vector2(float(iz) / TERRAIN_SUBDIVISIONS, 0))
+		surface_tool.add_vertex(Vector3(SIZE, h, z))
+		surface_tool.set_uv(Vector2(float(iz) / TERRAIN_SUBDIVISIONS, 1))
+		surface_tool.add_vertex(Vector3(SIZE, terrain_bottom, z))
+	
+	for iz in range(TERRAIN_SUBDIVISIONS):
+		var base = side_start_index + iz * 2
+		surface_tool.add_index(base)
+		surface_tool.add_index(base + 2)
+		surface_tool.add_index(base + 1)
+		
+		surface_tool.add_index(base + 1)
+		surface_tool.add_index(base + 2)
+		surface_tool.add_index(base + 3)
+	
 	surface_tool.generate_normals()
-	array_mesh = surface_tool.commit()
+	var array_mesh = surface_tool.commit()
 	mesh_instance.mesh = array_mesh
 	
 	var mat := StandardMaterial3D.new()
@@ -321,7 +443,7 @@ func generate_sea():
 	plane.size = Vector2(SIZE, SIZE)
 	water.mesh = plane
 	
-	var sea_level = -3.0
+	var sea_level = 0.0
 	water.position.y = sea_level
 	
 	var mat := StandardMaterial3D.new()
@@ -339,7 +461,9 @@ func generate_airport():
 	
 	var cx = chunk_coord.x * SIZE + SIZE * 0.5
 	var cz = chunk_coord.y * SIZE + SIZE * 0.5
-	var h = height_noise.get_noise_2d(cx, cz) * 20.0
+	
+	var center_noise = height_noise.get_noise_2d(cx, cz)
+	var h = (center_noise * 3.0) + 0.5
 	
 	airport.position = Vector3(SIZE * 0.5, h, SIZE * 0.5)
 	add_child(airport)
