@@ -63,4 +63,4 @@ We need to refuel sometimes
 - Stalling? Nose down, full throttle, wings level, wait for speed
 
 Fly high!!
-![](https://cdn.hackclub.com/019c5d6a-abbc-7b0a-8e7a-4886835524b4/captura_de_tela_2026-02-14_152432.png)
+![](https://cdn.hackclub.com/019c5d6e-f599-727b-8949-f738e7bd312c/grava____o_de_tela_2026-02-14_152904.mp4)
