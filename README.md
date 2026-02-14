@@ -1,5 +1,8 @@
+![](https://cdn.hackclub.com/019c5d68-45c4-7ae8-ac6a-3d146bec3f03/image.png)
 # Be my Copilot
 Be my copilot is a simple flight simulator experience based on Godot.
+
+Play the latest stable version on itch.io! https://lucashonda.itch.io/be-my-copilot
 
 ## How to fly?
 It's a little trick but you can learn whatever you want, captain!
@@ -58,3 +61,6 @@ We need to refuel sometimes
 - Watch airspeed, below 40 knots at high pitch = STALL
 - Use trim, makes flying easier
 - Stalling? Nose down, full throttle, wings level, wait for speed
+
+Fly high!!
+![](https://cdn.hackclub.com/019c5d6a-abbc-7b0a-8e7a-4886835524b4/captura_de_tela_2026-02-14_152432.png)
