@@ -17,7 +17,6 @@ sky_material = SubResource("PhysicalSkyMaterial_551yn")
 background_mode = 2
 background_energy_multiplier = 6.88
 sky = SubResource("Sky_lcqjs")
-ssao_enabled = true
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6mcdo"]
 
