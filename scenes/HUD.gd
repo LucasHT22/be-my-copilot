@@ -9,16 +9,39 @@ extends CanvasLayer
 @onready var aoa_label: Label = $VBoxContainer/AoALabel
 @onready var throttle_label: Label = $VBoxContainer/ThrottleLabel
 @onready var trim_label: Label = $VBoxContainer/TrimLabel
+@onready var flight_time_label: Label = $VBoxContainer/FlightTimeLabel
 
 var plane_ref: RigidBody3D
+var flight_time := 0.0
+var distance_traveled := 0.0
+var last_position: Vector3
+var flight_started := false
 
 func _ready():
 	plane_ref = get_node(plane) as RigidBody3D
 	stall_label.visible = false
+	last_position = plane_ref.global_position
 
 func _process(_delta):
 	if not plane_ref:
 		return
+	
+	if not plane_ref.is_on_ground() and not flight_started:
+		flight_started = true
+	
+	if flight_started:
+		flight_time += _delta
+		
+		var current_pos = plane_ref.global_position
+		distance_traveled += current_pos.distance_to(last_position)
+		last_position = current_pos
+	
+	var hours = int(flight_time / 3600)
+	var minutes = int(flight_time / 60) % 60
+	var seconds = int(flight_time) % 60
+	var distance_nm = distance_traveled * 0.000539957
+	
+	flight_time_label.text = "TIME: %02d:%02d:%02d | DIST: %.1f nm" % [hours, minutes, seconds, distance_nm]
 	
 	var speed_knots: float = plane_ref.indicated_airspeed * 1.94384
 	speed_label.text = "IAS: %.0f kt" % speed_knots

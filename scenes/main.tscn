@@ -1,11 +1,13 @@
-[gd_scene load_steps=26 format=3 uid="uid://caxjugclup7nx"]
+[gd_scene load_steps=28 format=3 uid="uid://caxjugclup7nx"]
 
 [ext_resource type="Script" path="res://scenes/Airplane.gd" id="1_3b1u5"]
 [ext_resource type="Script" path="res://scenes/HUD.gd" id="3_73tfw"]
 [ext_resource type="Script" path="res://scenes/Camera3D.gd" id="4_3rj1l"]
 [ext_resource type="Script" path="res://scenes/World.gd" id="4_61m14"]
 [ext_resource type="PackedScene" uid="uid://bmx83wcjvrkap" path="res://scenes/Chunk.tscn" id="5_64ru0"]
+[ext_resource type="Script" path="res://scenes/Minimap.gd" id="6_fewwf"]
 [ext_resource type="PackedScene" uid="uid://bf6g6txx13nlm" path="res://scenes/Airport.tscn" id="7_hqcs0"]
+[ext_resource type="Script" path="res://scenes/ArtificialHorizon.gd" id="7_k30mj"]
 
 [sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_551yn"]
 ground_color = Color(0.101961, 0.4, 0.0352941, 1)
@@ -173,6 +175,28 @@ layout_mode = 2
 
 [node name="TrimLabel" type="Label" parent="HUD/VBoxContainer"]
 layout_mode = 2
+
+[node name="FlightTimeLabel" type="Label" parent="HUD/VBoxContainer"]
+layout_mode = 2
+
+[node name="Minimap" type="Control" parent="HUD" node_paths=PackedStringArray("world", "player")]
+layout_mode = 3
+anchors_preset = 0
+offset_top = 189.0
+offset_right = 40.0
+offset_bottom = 189.0
+script = ExtResource("6_fewwf")
+world = NodePath("../../World")
+player = NodePath("../../World/Airplane")
+
+[node name="ArtificialHorizon" type="Control" parent="HUD" node_paths=PackedStringArray("minimap")]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("7_k30mj")
+plane_path = NodePath("../../World/Airplane")
+minimap = NodePath("../Minimap")
 
 [node name="Chunk" parent="." instance=ExtResource("5_64ru0")]
 
